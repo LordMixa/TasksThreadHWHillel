@@ -1,39 +1,32 @@
 ﻿namespace TasksThreadHWHillel
 {
-    class CharFrequencyTaskProcessor : TaskProcessorBase<char>
-    {
-        public Dictionary<char, int> Frequency { get; private set; } = new Dictionary<char, int>();
+    using System.Collections.Concurrent;
 
-        public CharFrequencyTaskProcessor(char[] array, int threadCount, CancellationToken token)
+    class CharFrequencyTaskProcessor : TaskProcessorBase<string>
+    {
+        public ConcurrentDictionary<char, int> Frequency { get; private set; } = new ConcurrentDictionary<char, int>();
+
+        public CharFrequencyTaskProcessor(string[] array, int threadCount, CancellationToken token)
             : base(array, threadCount, token)
         {
         }
-
         protected override void Process(int num)
         {
             if (_token.IsCancellationRequested) return;
 
             var itemsByThread = _array.Length / _taskCount;
-            var span = num == _taskCount - 1
-                ? _array[(num * itemsByThread)..]
-                : _array.AsSpan(num * itemsByThread, itemsByThread);
+            var span = GetWorkSpan(num);
 
-            foreach (var ch in span)
+            foreach (var str in span)
             {
-                if (_token.IsCancellationRequested) return;
-
-                lock (Frequency)
+                foreach (var ch in str)
                 {
-                    if (Frequency.ContainsKey(ch))
-                    {
-                        Frequency[ch]++;
-                    }
-                    else
-                    {
-                        Frequency[ch] = 1;
-                    }
+                    if (_token.IsCancellationRequested) return;
+
+                    Frequency.AddOrUpdate(ch, 1, (key, oldValue) => oldValue + 1);
                 }
             }
         }
     }
+
 }

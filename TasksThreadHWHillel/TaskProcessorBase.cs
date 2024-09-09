@@ -24,7 +24,13 @@
 
             return Task.WhenAll(tasks);
         }
-
+        protected Span<T> GetWorkSpan(int num)
+        {
+            var itemsByThread = _array.Length / _taskCount;
+            return num == _taskCount - 1
+                ? _array[(num * itemsByThread)..]
+                : _array.AsSpan(num * itemsByThread, itemsByThread);
+        }
         protected abstract void Process(int num);
     }
 }

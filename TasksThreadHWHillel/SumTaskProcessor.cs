@@ -14,12 +14,9 @@
         {
             if (_token.IsCancellationRequested) return;
 
-            var itemsByThread = _array.Length / _taskCount;
-            var span = num == _taskCount - 1
-                ? _array[(num * itemsByThread)..]
-                : _array.AsSpan(num * itemsByThread, itemsByThread);
+            var span = GetWorkSpan(num);
 
-            long localSum = 0; 
+            long localSum = 0;
             foreach (var value in span)
             {
                 if (_token.IsCancellationRequested) return;

@@ -1,8 +1,10 @@
 ﻿namespace TasksThreadHWHillel
 {
+    using System.Collections.Concurrent;
+
     class WordFrequencyTaskProcessor : TaskProcessorBase<string>
     {
-        public Dictionary<string, int> Frequency { get; private set; } = new Dictionary<string, int>();
+        public ConcurrentDictionary<string, int> Frequency { get; private set; } = new ConcurrentDictionary<string, int>();
 
         public WordFrequencyTaskProcessor(string[] array, int threadCount, CancellationToken token)
             : base(array, threadCount, token)
@@ -14,25 +16,13 @@
             if (_token.IsCancellationRequested) return;
 
             var itemsByThread = _array.Length / _taskCount;
-            var span = num == _taskCount - 1
-                ? _array[(num * itemsByThread)..]
-                : _array.AsSpan(num * itemsByThread, itemsByThread);
+            var span = GetWorkSpan(num);
 
             foreach (var word in span)
             {
                 if (_token.IsCancellationRequested) return;
 
-                lock (Frequency)
-                {
-                    if (Frequency.ContainsKey(word))
-                    {
-                        Frequency[word]++;
-                    }
-                    else
-                    {
-                        Frequency[word] = 1;
-                    }
-                }
+                Frequency.AddOrUpdate(word, 1, (key, oldValue) => oldValue + 1);
             }
         }
     }
